@@ -1,0 +1,14 @@
+jenkins_plugins:
+  - workflow-aggregator
+  - git
+  - credentials-binding
+  - docker-workflow
+  - ssh-agent
+  - matrix-auth
+  - matrix-project
+  - ws-cleanup
+  - dependency-check-jenkins-plugin
+
+jenkins_admin_user: admin
+jenkins_http_port: 8080
+jenkins_admin_password: "{{ vault_jenkins_admin_password }}"

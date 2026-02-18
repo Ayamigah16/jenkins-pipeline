@@ -15,7 +15,9 @@ pipeline {
         APP_NAME = 'secure-flask-app'
         APP_PORT = '3000'
         COVERAGE_MIN = '80'
-        REGISTRY = 'docker.io/your-dockerhub-user'
+        USE_ECR = 'true'
+        AWS_REGION = 'us-east-1'
+        REGISTRY = '123456789012.dkr.ecr.us-east-1.amazonaws.com'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
         DEPLOY_CONTAINER = 'secure-flask-app'
         EC2_HOST = 'YOUR_EC2_PUBLIC_DNS'
@@ -47,6 +49,17 @@ pipeline {
                     pip install --upgrade pip
                     pip install -r app/requirements.txt -r app/requirements-dev.txt
                     pip check
+                '''
+            }
+        }
+
+        stage('Initialize') {
+            steps {
+                sh '''
+                    set -euo pipefail
+                    if [ "${USE_ECR}" = "true" ]; then
+                      command -v aws >/dev/null 2>&1 || { echo "aws CLI is required for ECR"; exit 1; }
+                    fi
                 '''
             }
         }
@@ -107,14 +120,26 @@ pipeline {
 
         stage('Push Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
-                    sh '''
-                        set -euo pipefail
-                        echo "${REGISTRY_PASS}" | docker login -u "${REGISTRY_USER}" --password-stdin "${REGISTRY}"
-                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                        docker push ${IMAGE_NAME}:latest
-                        docker logout "${REGISTRY}"
-                    '''
+                script {
+                    if (env.USE_ECR == 'true') {
+                        sh '''
+                            set -euo pipefail
+                            aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${REGISTRY}"
+                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                            docker push ${IMAGE_NAME}:latest
+                            docker logout "${REGISTRY}"
+                        '''
+                    } else {
+                        withCredentials([usernamePassword(credentialsId: 'registry_creds', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
+                            sh '''
+                                set -euo pipefail
+                                echo "${REGISTRY_PASS}" | docker login -u "${REGISTRY_USER}" --password-stdin "${REGISTRY}"
+                                docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                                docker push ${IMAGE_NAME}:latest
+                                docker logout "${REGISTRY}"
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -125,11 +150,15 @@ pipeline {
                     sh '''
                         set -euo pipefail
                         ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} \
-                          "IMAGE_NAME='${IMAGE_NAME}:${BUILD_NUMBER}' REGISTRY='${REGISTRY}' APP_NAME='${APP_NAME}' DEPLOY_CONTAINER='${DEPLOY_CONTAINER}' bash -s" <<'EOF'
+                          "IMAGE_NAME='${IMAGE_NAME}:${BUILD_NUMBER}' REGISTRY='${REGISTRY}' APP_NAME='${APP_NAME}' DEPLOY_CONTAINER='${DEPLOY_CONTAINER}' USE_ECR='${USE_ECR}' AWS_REGION='${AWS_REGION}' bash -s" <<'EOF'
                         set -euo pipefail
                         APP_PORT=3000
                         ACTIVE_CONTAINER="${DEPLOY_CONTAINER}"
                         STAGING_CONTAINER="${DEPLOY_CONTAINER}-staging"
+
+                        if [ "${USE_ECR}" = "true" ]; then
+                          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${REGISTRY}"
+                        fi
 
                         docker pull "${IMAGE_NAME}"
 

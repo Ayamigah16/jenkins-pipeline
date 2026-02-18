@@ -1,0 +1,62 @@
+- name: Common baseline
+  hosts: all
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  pre_tasks:
+    - name: Check for vaulted vars file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      register: vaulted_vars_file
+      delegate_to: localhost
+      become: false
+
+    - name: Load vaulted vars if present
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      no_log: true
+      when: vaulted_vars_file.stat.exists
+  roles:
+    - common
+
+- name: Configure Jenkins host
+  hosts: jenkins
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  pre_tasks:
+    - name: Check for vaulted vars file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      register: vaulted_vars_file
+      delegate_to: localhost
+      become: false
+
+    - name: Load vaulted vars if present
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      no_log: true
+      when: vaulted_vars_file.stat.exists
+  roles:
+    - jenkins
+
+- name: Configure deployment host
+  hosts: deploy
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  pre_tasks:
+    - name: Check for vaulted vars file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      register: vaulted_vars_file
+      delegate_to: localhost
+      become: false
+
+    - name: Load vaulted vars if present
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/all/vault.yml"
+      no_log: true
+      when: vaulted_vars_file.stat.exists
+  roles:
+    - deploy
