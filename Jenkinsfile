@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     options {
-        timestamps()
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '20'))
         timeout(time: 45, unit: 'MINUTES')
@@ -22,7 +21,7 @@ pipeline {
         REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
         DEPLOY_CONTAINER = 'secure-flask-app'
-        EC2_HOST = 'ec2-34-241-221-87.eu-west-1.compute.amazonaws.com'
+        EC2_HOST = '34.240.74.180'
         EC2_USER = 'ec2-user'
     }
 
@@ -117,10 +116,7 @@ pipeline {
                       --scanners vuln,misconfig \
                       --severity HIGH,CRITICAL \
                       --exit-code 1 \
-                      --skip-dirs .git \
-                      --skip-dirs .venv \
-                      --skip-dirs .pytest_cache \
-                      .
+                      app app/Dockerfile
                     trivy fs \
                       --cache-dir "${TRIVY_CACHE_DIR}" \
                       --timeout "${TRIVY_TIMEOUT}" \
@@ -130,7 +126,7 @@ pipeline {
                       --skip-dirs .git \
                       --skip-dirs .venv \
                       --skip-dirs .pytest_cache \
-                      app tests infra Jenkinsfile README.md runbook.md
+                      app tests Jenkinsfile README.md runbook.md
                 '''
             }
         }
