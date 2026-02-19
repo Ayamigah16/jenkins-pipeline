@@ -14,6 +14,7 @@ pipeline {
         APP_NAME = 'secure-flask-app'
         APP_PORT = '3000'
         COVERAGE_MIN = '80'
+        PYTHON_IMAGE = 'python:3.12-slim'
         USE_ECR = 'true'
         AWS_REGION = 'eu-west-1'
         REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com/secure-flask-app'
@@ -43,11 +44,18 @@ pipeline {
             steps {
                 sh '''
                     set -euo pipefail
-                    python3 -m venv .venv
-                    . .venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r app/requirements.txt -r app/requirements-dev.txt
-                    pip check
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
+                        python -m venv .venv
+                        . .venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r app/requirements.txt -r app/requirements-dev.txt
+                        pip check
+                      '
                 '''
             }
         }
@@ -67,8 +75,15 @@ pipeline {
             steps {
                 sh '''
                     set -euo pipefail
-                    . .venv/bin/activate
-                    pytest -q --cov=app --cov-report=xml --cov-fail-under=${COVERAGE_MIN}
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
+                        . .venv/bin/activate
+                        pytest -q --cov=app --cov-report=xml --cov-fail-under='"${COVERAGE_MIN}"'
+                      '
                 '''
             }
         }
@@ -77,9 +92,16 @@ pipeline {
             steps {
                 sh '''
                     set -euo pipefail
-                    . .venv/bin/activate
-                    bandit -q -r app
-                    pip-audit -r app/requirements.txt
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
+                        . .venv/bin/activate
+                        bandit -q -r app
+                        pip-audit -r app/requirements.txt
+                      '
                     if ! command -v trivy >/dev/null 2>&1; then
                         echo "Trivy not found on agent. Install Trivy CLI." >&2
                         exit 1
