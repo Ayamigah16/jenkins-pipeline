@@ -13,6 +13,17 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_kms_key" "tf_state" {
+  description             = "KMS key for Terraform state bucket encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+}
+
+resource "aws_kms_alias" "tf_state" {
+  name          = "alias/${var.project_name}-tf-state"
+  target_key_id = aws_kms_key.tf_state.key_id
+}
+
 resource "aws_s3_bucket" "tf_state" {
   bucket = var.state_bucket_name
 
@@ -36,8 +47,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.tf_state.arn
     }
+    bucket_key_enabled = true
   }
 }
 

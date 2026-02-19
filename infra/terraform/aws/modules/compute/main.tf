@@ -8,6 +8,10 @@ resource "aws_instance" "jenkins" {
   iam_instance_profile        = var.jenkins_instance_profile_name
   user_data                   = "ssh_key_fingerprint=${var.ssh_key_fingerprint}"
   user_data_replace_on_change = true
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
 
   root_block_device {
     volume_size = 30
@@ -31,6 +35,10 @@ resource "aws_instance" "deploy" {
   iam_instance_profile        = var.deploy_instance_profile_name
   user_data                   = "ssh_key_fingerprint=${var.ssh_key_fingerprint}"
   user_data_replace_on_change = true
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
 
   root_block_device {
     volume_size = 20
