@@ -22,7 +22,7 @@ pipeline {
         REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
         DEPLOY_CONTAINER = 'secure-flask-app'
-        EC2_HOST = '34.240.74.180'
+        EC2_HOST = 'ec2-34-240-74-180.eu-west-1.compute.amazonaws.com'
         EC2_USER = 'ec2-user'
         EC2_SSH_CREDENTIALS_ID = 'ec2_ssh'
     }
