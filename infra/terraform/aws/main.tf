@@ -110,7 +110,7 @@ resource "local_file" "ansible_env" {
     jenkins_host_dns     = module.compute.jenkins_public_dns
     deploy_host_ip       = module.compute.deploy_public_ip
     deploy_host_dns      = module.compute.deploy_public_dns
-    ssh_private_key_file = "${abspath(path.root)}/../../keys/${var.key_pair_name}.pem"
+    ssh_private_key_file = abspath("${path.root}/../../keys/${var.key_pair_name}.pem")
   })
   file_permission = "0600"
 }

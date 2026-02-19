@@ -16,5 +16,7 @@ __pycache__/
 coverage.xml
 
 infra/keys/*.pem
+infra/keys/*.pub
 infra/ansible/.env
 infra/ansible/group_vars/all/vault.yml
+infra/keys/*

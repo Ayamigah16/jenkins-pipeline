@@ -3,7 +3,6 @@ pipeline {
 
     options {
         timestamps()
-        ansiColor('xterm')
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '20'))
         timeout(time: 45, unit: 'MINUTES')
@@ -16,11 +15,11 @@ pipeline {
         APP_PORT = '3000'
         COVERAGE_MIN = '80'
         USE_ECR = 'true'
-        AWS_REGION = 'us-east-1'
-        REGISTRY = '123456789012.dkr.ecr.us-east-1.amazonaws.com'
+        AWS_REGION = 'eu-west-1'
+        REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com/secure-flask-app'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
         DEPLOY_CONTAINER = 'secure-flask-app'
-        EC2_HOST = 'YOUR_EC2_PUBLIC_DNS'
+        EC2_HOST = 'ec2-34-241-221-87.eu-west-1.compute.amazonaws.com'
         EC2_USER = 'ec2-user'
     }
 
