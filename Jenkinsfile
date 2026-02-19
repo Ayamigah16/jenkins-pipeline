@@ -23,6 +23,7 @@ pipeline {
         DEPLOY_CONTAINER = 'secure-flask-app'
         EC2_HOST = '34.240.74.180'
         EC2_USER = 'ec2-user'
+        EC2_SSH_CREDENTIALS_ID = 'ec2_ssh'
     }
 
     stages {
@@ -189,7 +190,7 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(credentials: ['ec2_ssh']) {
+                sshagent(credentials: [env.EC2_SSH_CREDENTIALS_ID]) {
                     sh '''
                         set -euo pipefail
                         ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} \
