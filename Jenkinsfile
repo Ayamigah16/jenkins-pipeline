@@ -17,6 +17,7 @@ pipeline {
         TRIVY_CACHE_DIR = '/var/lib/jenkins/.cache/trivy'
         TRIVY_TIMEOUT = '5m'
         USE_ECR = 'true'
+        ECR_PUSH_LATEST = 'false'
         AWS_REGION = 'eu-west-1'
         REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
@@ -170,7 +171,11 @@ pipeline {
                             set -euo pipefail
                             aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${REGISTRY}"
                             docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                            docker push ${IMAGE_NAME}:latest
+                            if [ "${ECR_PUSH_LATEST}" = "true" ]; then
+                              docker push ${IMAGE_NAME}:latest
+                            else
+                              echo "Skipping latest tag push for immutable ECR repository."
+                            fi
                             docker logout "${REGISTRY}"
                         '''
                     } else {
