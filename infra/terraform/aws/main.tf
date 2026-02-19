@@ -59,6 +59,7 @@ module "security" {
   project_name = var.project_name
   vpc_id       = module.network.vpc_id
   admin_cidrs  = var.admin_cidrs
+  jenkins_cidrs = var.jenkins_cidrs
   tags         = local.common_tags
 }
 

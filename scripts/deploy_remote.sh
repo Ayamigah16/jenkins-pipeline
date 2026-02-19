@@ -58,6 +58,13 @@ docker run -d --name "${ACTIVE_CONTAINER}" -p 80:${APP_PORT} \
 
 docker rm -f "${STAGING_CONTAINER}" || true
 
+for i in {1..10}; do
+  if curl -fsS "http://localhost/health" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
 if ! curl -fsS "http://localhost/health" >/dev/null 2>&1; then
   docker rm -f "${ACTIVE_CONTAINER}" || true
   if [ -n "${OLD_IMAGE}" ]; then

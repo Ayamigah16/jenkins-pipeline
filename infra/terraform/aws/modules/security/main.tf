@@ -49,6 +49,7 @@ resource "aws_security_group" "deploy" {
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
+    cidr_blocks = var.jenkins_cidrs
     security_groups = [aws_security_group.jenkins.id]
   }
 

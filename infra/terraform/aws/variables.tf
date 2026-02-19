@@ -34,6 +34,12 @@ variable "admin_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "jenkins_cidrs" {
+  description = "Allowed CIDRs for Jenkins access"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
 variable "key_pair_name" {
   description = "AWS key pair name"
   type        = string
