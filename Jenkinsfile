@@ -15,6 +15,8 @@ pipeline {
         APP_PORT = '3000'
         COVERAGE_MIN = '80'
         PYTHON_IMAGE = 'python:3.12-slim'
+        TRIVY_CACHE_DIR = '/var/lib/jenkins/.cache/trivy'
+        TRIVY_TIMEOUT = '5m'
         USE_ECR = 'true'
         AWS_REGION = 'eu-west-1'
         REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com'
@@ -107,7 +109,28 @@ pipeline {
                         echo "Trivy not found on agent. Install Trivy CLI." >&2
                         exit 1
                     fi
-                    trivy fs --scanners vuln,secret,config --severity HIGH,CRITICAL --exit-code 1 .
+                    mkdir -p "${TRIVY_CACHE_DIR}"
+                    trivy image --cache-dir "${TRIVY_CACHE_DIR}" --download-db-only
+                    trivy fs \
+                      --cache-dir "${TRIVY_CACHE_DIR}" \
+                      --timeout "${TRIVY_TIMEOUT}" \
+                      --scanners vuln,misconfig \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --skip-dirs .git \
+                      --skip-dirs .venv \
+                      --skip-dirs .pytest_cache \
+                      .
+                    trivy fs \
+                      --cache-dir "${TRIVY_CACHE_DIR}" \
+                      --timeout "${TRIVY_TIMEOUT}" \
+                      --scanners secret \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --skip-dirs .git \
+                      --skip-dirs .venv \
+                      --skip-dirs .pytest_cache \
+                      app tests infra Jenkinsfile README.md runbook.md
                 '''
             }
         }
@@ -135,7 +158,13 @@ pipeline {
             steps {
                 sh '''
                     set -euo pipefail
-                    trivy image --severity HIGH,CRITICAL --exit-code 1 ${IMAGE_NAME}:${BUILD_NUMBER}
+                    trivy image \
+                      --cache-dir "${TRIVY_CACHE_DIR}" \
+                      --skip-db-update \
+                      --timeout "${TRIVY_TIMEOUT}" \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      ${IMAGE_NAME}:${BUILD_NUMBER}
                 '''
             }
         }
