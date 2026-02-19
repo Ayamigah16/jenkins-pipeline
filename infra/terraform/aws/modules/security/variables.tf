@@ -10,10 +10,6 @@ variable "admin_cidrs" {
   type = list(string)
 }
 
-variable "jenkins_cidrs" {
-  type = list(string)
-}
-
 variable "tags" {
   type = map(string)
 }
