@@ -1,4 +1,9 @@
+import signal
+
+import pytest
+
 from app import create_app
+from app.app import _handle_shutdown
 
 
 def test_health_endpoint_returns_ok():
@@ -30,3 +35,21 @@ def test_env_configuration_overrides_defaults(monkeypatch):
 
     assert app.config["APP_PORT"] == 7777
     assert app.config["APP_NAME"] == "unit-test-app"
+
+
+def test_health_endpoint_includes_metadata():
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/health")
+    payload = response.get_json()
+
+    assert payload["environment"] == app.config["ENVIRONMENT"]
+    assert payload["app"] == app.config["APP_NAME"]
+
+
+def test_shutdown_handler_exits_cleanly():
+    with pytest.raises(SystemExit) as exc:
+        _handle_shutdown(signal.SIGTERM, None)
+
+    assert exc.value.code == 0
