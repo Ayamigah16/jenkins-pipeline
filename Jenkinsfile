@@ -17,7 +17,7 @@ pipeline {
         PYTHON_IMAGE = 'python:3.12-slim'
         USE_ECR = 'true'
         AWS_REGION = 'eu-west-1'
-        REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com/secure-flask-app'
+        REGISTRY = '414392949441.dkr.ecr.eu-west-1.amazonaws.com'
         IMAGE_NAME = "${REGISTRY}/${APP_NAME}"
         DEPLOY_CONTAINER = 'secure-flask-app'
         EC2_HOST = 'ec2-34-241-221-87.eu-west-1.compute.amazonaws.com'
@@ -82,6 +82,7 @@ pipeline {
                       "${PYTHON_IMAGE}" \
                       bash -lc '
                         . .venv/bin/activate
+                        export PYTHONPATH=/workspace
                         pytest -q --cov=app --cov-report=xml --cov-fail-under='"${COVERAGE_MIN}"'
                       '
                 '''
