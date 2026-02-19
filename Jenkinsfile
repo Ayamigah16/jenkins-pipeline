@@ -43,7 +43,7 @@ pipeline {
             steps {
                 sh '''
                     set -euo pipefail
-                    python -m venv .venv
+                    python3 -m venv .venv
                     . .venv/bin/activate
                     pip install --upgrade pip
                     pip install -r app/requirements.txt -r app/requirements-dev.txt
