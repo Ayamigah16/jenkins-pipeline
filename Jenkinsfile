@@ -40,8 +40,8 @@ pipeline {
                     env.AWS_REGION = env.AWS_REGION?.trim() ?: 'eu-west-1'
                     env.DEPLOY_CONTAINER = env.DEPLOY_CONTAINER?.trim() ?: 'secure-flask-app'
                     env.EC2_USER = env.EC2_USER?.trim() ?: 'ec2-user'
-                    // Support either env name. Keep explicit so wrong defaults do not break deploys late.
-                    env.EC2_SSH_CREDENTIALS_ID = env.EC2_SSH_CREDENTIALS_ID?.trim() ?: env.EC2_SSH_CREDENTIAL_ID?.trim()
+                    // Credential ID for Jenkins ssh-agent plugin (not SSH username).
+                    env.EC2_SSH_CREDENTIALS_ID = env.EC2_SSH_CREDENTIALS_ID?.trim() ?: env.EC2_SSH_CREDENTIAL_ID?.trim() ?: 'ec2-ssh'
 
                     def missing = []
                     if (!env.REGISTRY?.trim()) {
@@ -49,9 +49,6 @@ pipeline {
                     }
                     if (!env.EC2_HOST?.trim()) {
                         missing << 'EC2_HOST'
-                    }
-                    if (!env.EC2_SSH_CREDENTIALS_ID?.trim()) {
-                        missing << 'EC2_SSH_CREDENTIALS_ID (or EC2_SSH_CREDENTIAL_ID)'
                     }
                     if (!missing.isEmpty()) {
                         error("Missing required Jenkins environment variables: ${missing.join(', ')}")
