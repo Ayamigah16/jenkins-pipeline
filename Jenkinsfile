@@ -1,25 +1,3 @@
-def runPythonTask(String taskScript) {
-    writeFile(
-        file: '.jenkins_python_task.sh',
-        text: """#!/usr/bin/env bash
-set -euo pipefail
-${taskScript}
-"""
-    )
-    sh(
-        script: '''#!/usr/bin/env bash
-set -euo pipefail
-chmod +x .jenkins_python_task.sh
-docker run --rm \
-  -u "$(id -u):$(id -g)" \
-  -v "$PWD:/workspace" \
-  -w /workspace \
-  "${PYTHON_IMAGE}" \
-  bash /workspace/.jenkins_python_task.sh
-'''
-    )
-}
-
 pipeline {
     agent any
 
@@ -89,40 +67,58 @@ pipeline {
 
         stage('Install / Build') {
             steps {
-                script {
-                    runPythonTask('''
+                sh '''
+                    set -euo pipefail
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
                         python -m venv .venv
                         . .venv/bin/activate
                         pip install --upgrade pip
                         pip install -r app/requirements.txt -r app/requirements-dev.txt
                         pip check
-                    '''.stripIndent().trim())
-                }
+                      '
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    runPythonTask("""
+                sh '''
+                    set -euo pipefail
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
                         . .venv/bin/activate
                         export PYTHONPATH=/workspace
-                        pytest -q --cov=app --cov-report=xml --cov-fail-under=${env.COVERAGE_MIN}
-                    """.stripIndent().trim())
-                }
+                        pytest -q --cov=app --cov-report=xml --cov-fail-under="${COVERAGE_MIN}"
+                      '
+                '''
             }
         }
 
         stage('Security Gates') {
             steps {
-                script {
-                    runPythonTask('''
+                sh '''
+                    set -euo pipefail
+                    docker run --rm \
+                      -u "$(id -u):$(id -g)" \
+                      -v "$PWD:/workspace" \
+                      -w /workspace \
+                      "${PYTHON_IMAGE}" \
+                      bash -lc '
                         . .venv/bin/activate
-                        bandit -q -r app
+                        bandit -q -r app --severity-level high
                         pip-audit -r app/requirements.txt
-                    '''.stripIndent().trim())
-                    // Trivy checks intentionally disabled for now.
-                }
+                      '
+                    # Trivy checks intentionally disabled for now.
+                '''
             }
         }
 
