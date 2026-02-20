@@ -45,26 +45,26 @@ pipeline {
             steps {
                 script {
                     // Load values from Jenkins global env/job env, with safe defaults.
-                    def defaults = [
-                        APP_NAME               : 'secure-flask-app',
-                        APP_PORT               : '3000',
-                        COVERAGE_MIN           : '80',
-                        PYTHON_IMAGE           : 'python:3.12-slim',
-                        TRIVY_CACHE_DIR        : '/var/lib/jenkins/.cache/trivy',
-                        TRIVY_TIMEOUT          : '5m',
-                        USE_ECR                : 'true',
-                        ECR_PUSH_LATEST        : 'false',
-                        AWS_REGION             : 'eu-west-1',
-                        DEPLOY_CONTAINER       : 'secure-flask-app',
-                        EC2_USER               : 'ec2-user',
-                        EC2_SSH_CREDENTIALS_ID : 'ec2_ssh'
-                    ]
-                    defaults.each { key, defaultValue ->
-                        env[key] = env[key]?.trim() ? env[key].trim() : defaultValue
-                    }
+                    env.APP_NAME = env.APP_NAME?.trim() ?: 'secure-flask-app'
+                    env.APP_PORT = env.APP_PORT?.trim() ?: '3000'
+                    env.COVERAGE_MIN = env.COVERAGE_MIN?.trim() ?: '80'
+                    env.PYTHON_IMAGE = env.PYTHON_IMAGE?.trim() ?: 'python:3.12-slim'
+                    env.TRIVY_CACHE_DIR = env.TRIVY_CACHE_DIR?.trim() ?: '/var/lib/jenkins/.cache/trivy'
+                    env.TRIVY_TIMEOUT = env.TRIVY_TIMEOUT?.trim() ?: '5m'
+                    env.USE_ECR = env.USE_ECR?.trim() ?: 'true'
+                    env.ECR_PUSH_LATEST = env.ECR_PUSH_LATEST?.trim() ?: 'false'
+                    env.AWS_REGION = env.AWS_REGION?.trim() ?: 'eu-west-1'
+                    env.DEPLOY_CONTAINER = env.DEPLOY_CONTAINER?.trim() ?: 'secure-flask-app'
+                    env.EC2_USER = env.EC2_USER?.trim() ?: 'ec2-user'
+                    env.EC2_SSH_CREDENTIALS_ID = env.EC2_SSH_CREDENTIALS_ID?.trim() ?: 'ec2_ssh'
 
-                    def required = ['REGISTRY', 'EC2_HOST']
-                    def missing = required.findAll { !env[it]?.trim() }
+                    def missing = []
+                    if (!env.REGISTRY?.trim()) {
+                        missing << 'REGISTRY'
+                    }
+                    if (!env.EC2_HOST?.trim()) {
+                        missing << 'EC2_HOST'
+                    }
                     if (!missing.isEmpty()) {
                         error("Missing required Jenkins environment variables: ${missing.join(', ')}")
                     }
