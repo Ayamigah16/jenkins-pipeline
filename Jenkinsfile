@@ -1,16 +1,22 @@
-import groovy.json.JsonOutput
-
 def runPythonTask(String taskScript) {
-    sh(
-        script: """#!/usr/bin/env bash
+    writeFile(
+        file: '.jenkins_python_task.sh',
+        text: """#!/usr/bin/env bash
 set -euo pipefail
-docker run --rm \
-  -u "\$(id -u):\$(id -g)" \
-  -v "\$PWD:/workspace" \
-  -w /workspace \
-  "${env.PYTHON_IMAGE}" \
-  bash -lc ${JsonOutput.toJson(taskScript)}
+${taskScript}
 """
+    )
+    sh(
+        script: '''#!/usr/bin/env bash
+set -euo pipefail
+chmod +x .jenkins_python_task.sh
+docker run --rm \
+  -u "$(id -u):$(id -g)" \
+  -v "$PWD:/workspace" \
+  -w /workspace \
+  "${PYTHON_IMAGE}" \
+  bash /workspace/.jenkins_python_task.sh
+'''
     )
 }
 
