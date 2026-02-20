@@ -40,7 +40,8 @@ pipeline {
                     env.AWS_REGION = env.AWS_REGION?.trim() ?: 'eu-west-1'
                     env.DEPLOY_CONTAINER = env.DEPLOY_CONTAINER?.trim() ?: 'secure-flask-app'
                     env.EC2_USER = env.EC2_USER?.trim() ?: 'ec2-user'
-                    env.EC2_SSH_CREDENTIALS_ID = env.EC2_SSH_CREDENTIALS_ID?.trim() ?: 'ec2_ssh'
+                    // Support either env name and default to the credential id already used in Jenkins.
+                    env.EC2_SSH_CREDENTIALS_ID = env.EC2_SSH_CREDENTIALS_ID?.trim() ?: env.EC2_SSH_CREDENTIAL_ID?.trim() ?: 'ec2-user'
 
                     def missing = []
                     if (!env.REGISTRY?.trim()) {
