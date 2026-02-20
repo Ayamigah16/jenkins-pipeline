@@ -128,6 +128,7 @@ pipeline {
                 script {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     def buildTs = sh(returnStdout: true, script: "date -u +%Y-%m-%dT%H:%M:%SZ").trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${gitCommit}"
                     sh """
                         set -euo pipefail
                         docker build -t ${APP_NAME}:${BUILD_NUMBER} \
@@ -135,7 +136,7 @@ pipeline {
                           --build-arg GIT_COMMIT=${gitCommit} \
                           --build-arg BUILD_TIMESTAMP=${buildTs} \
                           -f app/Dockerfile app
-                        docker tag ${APP_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker tag ${APP_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:${IMAGE_TAG}
                         docker tag ${APP_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                     """
                 }
@@ -155,11 +156,14 @@ pipeline {
         stage('Push Image') {
             steps {
                 script {
+                    if (!env.IMAGE_TAG?.trim()) {
+                        env.IMAGE_TAG = "${env.BUILD_NUMBER}-${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                    }
                     if (env.USE_ECR.toBoolean()) {
                         sh '''
                             set -euo pipefail
                             aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${REGISTRY}"
-                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
                         '''
                         if (env.ECR_PUSH_LATEST.toBoolean()) {
                             sh 'docker push ${IMAGE_NAME}:latest'
@@ -172,7 +176,7 @@ pipeline {
                             sh '''
                                 set -euo pipefail
                                 echo "${REGISTRY_PASS}" | docker login -u "${REGISTRY_USER}" --password-stdin "${REGISTRY}"
-                                docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                                docker push ${IMAGE_NAME}:${IMAGE_TAG}
                             '''
                             if (env.ECR_PUSH_LATEST.toBoolean()) {
                                 sh 'docker push ${IMAGE_NAME}:latest'
@@ -187,12 +191,17 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(credentials: [env.EC2_SSH_CREDENTIALS_ID]) {
-                    sh '''
-                        set -euo pipefail
-                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} \
-                          "IMAGE_NAME='${IMAGE_NAME}:${BUILD_NUMBER}' REGISTRY='${REGISTRY}' APP_NAME='${APP_NAME}' DEPLOY_CONTAINER='${DEPLOY_CONTAINER}' USE_ECR='${USE_ECR}' AWS_REGION='${AWS_REGION}' bash -s" \
-                          < scripts/deploy_remote.sh
-                    '''
+                    script {
+                        if (!env.IMAGE_TAG?.trim()) {
+                            env.IMAGE_TAG = "${env.BUILD_NUMBER}-${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                        }
+                        sh '''
+                            set -euo pipefail
+                            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} \
+                              "IMAGE_NAME='${IMAGE_NAME}:${IMAGE_TAG}' REGISTRY='${REGISTRY}' APP_NAME='${APP_NAME}' DEPLOY_CONTAINER='${DEPLOY_CONTAINER}' USE_ECR='${USE_ECR}' AWS_REGION='${AWS_REGION}' bash -s" \
+                              < scripts/deploy_remote.sh
+                        '''
+                    }
                 }
             }
         }
