@@ -93,6 +93,7 @@ pipeline {
                       -u "$(id -u):$(id -g)" \
                       -v "$PWD:/workspace" \
                       -w /workspace \
+                      -e COVERAGE_MIN="${COVERAGE_MIN}" \
                       "${PYTHON_IMAGE}" \
                       bash -lc '
                         . .venv/bin/activate
